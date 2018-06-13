@@ -41,6 +41,7 @@ var negamax = function(deep, alpha, beta) {
 
   for(var i=0;i<candidates.length;i++) {
     var p = candidates[i];
+    board.searchSteps = [];
     board.put(p, R.com);
     var steps = [p[0], p[1]];
     var v = r(deep-1, -beta, -alpha, R.hum, 1, steps.slice(0), 0);

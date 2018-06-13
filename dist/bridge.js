@@ -275,6 +275,7 @@ Board.prototype.put = function(p, role, record) {
   if (record) this.steps.push(p);
   this.updateScore(p);
   this.allSteps.push(p);
+  this.searchSteps.push(p);
 }
 // 最后一次下子位置
 Board.prototype.last = function(role) {
@@ -293,6 +294,7 @@ Board.prototype.remove = function(p) {
   this.board[p[0]][p[1]] = R.empty;
   this.updateScore(p);
   this.allSteps.pop();
+  this.searchSteps.pop();
 }
 
 //悔棋
@@ -392,10 +394,10 @@ Board.prototype.gen = function(role, onlyThrees, starSpread) {
   var startI = 0, startJ = 0, endI = board.length-1, endJ = board.length-1;
   if (starSpread && config.star) {
 
-    var len = this.allSteps.length
+    var len = this.searchSteps.length
     var i = len - 1;
     while(!lastPoint1 && i >= 0) {
-      var p = this.allSteps[i];
+      var p = this.searchSteps[i];
       if (p.role !== role && p.attack !== role) lastPoint1 = p;
       i -= 2;
     }
@@ -403,14 +405,14 @@ Board.prototype.gen = function(role, onlyThrees, starSpread) {
 
     var i = len - 2;
     while(!lastPoint2 && i >= 0) {
-      var p = this.allSteps[i];
+      var p = this.searchSteps[i];
       if (p.attack === role) lastPoint2 = p;
       i -= 2;
     }
 
     if (!lastPoint1 && !lastPoint2) {
-      lastPoint1 = this.allSteps[len-1]
-      lastPoint2 = this.allSteps[len-2]
+      lastPoint1 = this.searchSteps[len-1]
+      lastPoint2 = this.searchSteps[len-2]
     } else if (!lastPoint1 && lastPoint2) {
       lastPoint1 = lastPoint2
     } else if (lastPoint1 && !lastPoint2) {
@@ -1286,6 +1288,7 @@ var negamax = function(deep, alpha, beta) {
 
   for(var i=0;i<candidates.length;i++) {
     var p = candidates[i];
+    board.searchSteps = [];
     board.put(p, R.com);
     var steps = [p[0], p[1]];
     var v = r(deep-1, -beta, -alpha, R.hum, 1, steps.slice(0), 0);
