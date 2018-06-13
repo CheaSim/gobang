@@ -137,6 +137,7 @@ Board.prototype.init = function(sizeOrBoard) {
   this.evaluateCache = {};
   this.steps = [];
   this.allSteps = [];
+  this.searchSteps = [];
   this.zobrist = zobrist;
   zobrist.init(); // 注意重新初始化
   this._last = [false, false]; // 记录最后一步
