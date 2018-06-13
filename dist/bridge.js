@@ -125,6 +125,11 @@ var fixScore = function(type) {
   return type;
 }
 
+var starTo = function (a, b) {
+  if (!a || !b) return false
+  return a[0] === b[0] || a[1] === b[1] || Math.abs(a[0]-b[0]) === Math.abs(a[1]-b[1])
+}
+
 var Board = function() {
 }
 
@@ -387,27 +392,31 @@ Board.prototype.gen = function(role, onlyThrees, starSpread) {
   var startI = 0, startJ = 0, endI = board.length-1, endJ = board.length-1;
   if (starSpread && config.star) {
 
-    var i = this.allSteps.length - 1;
+    var len = this.allSteps.length
+    var i = len - 1;
     while(!lastPoint1 && i >= 0) {
       var p = this.allSteps[i];
       if (p.role !== role && p.attack !== role) lastPoint1 = p;
       i -= 2;
     }
 
-    if (!lastPoint1) {
-      lastPoint1 = this.allSteps[0].role !== role ? this.allSteps[0] : this.allSteps[1]
-    }
 
-    var i = this.allSteps.length - 2;
+    var i = len - 2;
     while(!lastPoint2 && i >= 0) {
       var p = this.allSteps[i];
       if (p.attack === role) lastPoint2 = p;
       i -= 2;
     }
 
-    if (!lastPoint2) {
-      lastPoint2 = this.allSteps[0].role === role ? this.allSteps[0] : this.allSteps[1]
+    if (!lastPoint1 && !lastPoint2) {
+      lastPoint1 = this.allSteps[len-1]
+      lastPoint2 = this.allSteps[len-2]
+    } else if (!lastPoint1 && lastPoint2) {
+      lastPoint1 = lastPoint2
+    } else if (lastPoint1 && !lastPoint2) {
+      lastPoint2 = lastPoint1
     }
+
     startI = Math.min(lastPoint1[0]-5, lastPoint2[0]-5)
     startJ = Math.min(lastPoint1[1]-5, lastPoint2[1]-5)
     startI = Math.max(0, startI);
@@ -451,10 +460,8 @@ Board.prototype.gen = function(role, onlyThrees, starSpread) {
               continue;
             }
             // 必须在米子方向上
-            if (
-              maxScore >= S.FIVE ||
-              (i === lastPoint1[0] || j === lastPoint1[1] || (Math.abs(i-lastPoint1[0]) === Math.abs(j-lastPoint1[1])))
-             || (i === lastPoint2[0] || j === lastPoint2[1] || (Math.abs(i-lastPoint2[0]) === Math.abs(j-lastPoint2[1]))) ) {
+            if ( maxScore >= S.FIVE || starTo(lastPoint1, p) || starTo(lastPoint2, p)) {
+              
             } else {
               count ++;
               continue;
@@ -532,7 +539,7 @@ Board.prototype.gen = function(role, onlyThrees, starSpread) {
       .concat(comthrees)
   }
 
-  // result.sort(function(a, b) { return b.score - a.score })
+  result.sort(function(a, b) { return b.score - a.score })
 
   //双三很特殊，因为能形成双三的不一定比一个活三强
   if(comtwothrees.length || humtwothrees.length) {
@@ -1320,7 +1327,7 @@ var r = function(deep, alpha, beta, role, step, steps, spread) {
         return {
           score: c.score.score,
           steps: steps,
-          step: step,
+          step: c.score.step,
           c: c
         };
       } else {
