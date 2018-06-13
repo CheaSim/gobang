@@ -82,7 +82,7 @@ var r = function(deep, alpha, beta, role, step, steps, spread) {
         return {
           score: c.score.score,
           steps: steps,
-          step: step,
+          step: c.score.step,
           c: c
         };
       } else {
