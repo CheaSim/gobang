@@ -29,6 +29,10 @@ var vcxDeep;
 var startTime; // 开始时间，用来计算每一步的时间
 var allBestPoints; // 记录迭代过程中得到的全部最好点
 
+// 能赢的概率，不管任何一方。
+// 计算方式很简单，只要叶节点的分数大于某一个值就加一
+var probability_total = 0, probability_molecule = 0;
+
 /*
  * max min search
  * white is max, black is min
@@ -41,6 +45,8 @@ var negamax = function(deep, alpha, beta) {
 
   for(var i=0;i<candidates.length;i++) {
     var p = candidates[i];
+    probability_total = 0; // 初始值为0
+    probability_molecule = 0; // 初始值为0
     board.searchSteps = [];
     board.put(p, R.com);
     var steps = [p[0], p[1]];
@@ -49,6 +55,7 @@ var negamax = function(deep, alpha, beta) {
     alpha = Math.max(alpha, v.score);
     board.remove(p);
     p.v = v
+    p.probability = probability_molecule / probability_total;
 
     // 超时判定
     if ((+ new Date()) - start > config.timeLimit * 1000) {
@@ -63,6 +70,8 @@ var negamax = function(deep, alpha, beta) {
       + ',score:' + d.v.score
       + ',step:' + d.v.step
       + ',steps:' + d.v.steps.join(';')
+      + ',prob:' + d.probability
+      + ',abcut:' + d.v.abcut
       + (d.v.c ? ',c:' + [d.v.c.score.steps || [] ].join(";") : '')
       + (d.v.vct ? (',vct:' + d.v.vct.join(';')) : '')
       + (d.v.vcf ? (',vcf:' + d.v.vcf.join(';')) : '')
@@ -106,6 +115,14 @@ var r = function(deep, alpha, beta, role, step, steps, spread) {
   }
 
   count ++;
+
+  if (deep <=0 ) {
+    probability_total ++;
+    if (_e >= SCORE.FOUR) probability_molecule += 1;
+    else if (_e < - SCORE.FOUR) probability_molecule -= 1;
+    if (_e >= SCORE.THREE) probability_molecule += 0.1;
+    else if (_e < - SCORE.THREE) probability_molecule -= 0.1;
+  }
   // 搜索到底 或者已经胜利
   // 注意这里是小于0，而不是1，因为本次直接返回结果并没有下一步棋
   if(deep <= 0 || math.greatOrEqualThan(_e, T.FIVE) || math.littleOrEqualThan(_e, -T.FIVE)) {
@@ -185,7 +202,7 @@ var r = function(deep, alpha, beta, role, step, steps, spread) {
  
 
     // 注意，这里决定了剪枝时使用的值必须比MAX小
-    if(v.score > best.score) {
+    if(math.greatThan(v.score, best.score)) {
       best = v;
     }
     alpha = Math.max(best.score, alpha);
@@ -193,10 +210,9 @@ var r = function(deep, alpha, beta, role, step, steps, spread) {
     // 这里不要直接返回原来的值，因为这样上一层会以为就是这个分，实际上这个节点直接剪掉就好了，根本不用考虑，也就是直接给一个很大的值让他被减掉
     // 这样会导致一些差不多的节点都被剪掉，但是没关系，不影响棋力
     // 一定要注意，这里必须是 greatThan 即 明显大于，而不是 greatOrEqualThan 不然会出现很多差不多的有用分支被剪掉，会出现致命错误
-    if(math.greatOrEqualThan(v.score, beta)) {
+    if(config.abcut && math.greatOrEqualThan(v.score, beta)) {
       config.debug && console.log('AB Cut [' + p[0] + ',' + p[1] + ']' + v.score + ' >= ' + beta + '')
       ABcut ++;
-      v.score = MAX-1; // 被剪枝的，直接用一个极大值来记录，但是注意必须比MAX小
       v.abcut = 1; // 剪枝标记
       // cache(deep, v); // 别缓存被剪枝的，而且，这个返回到上层之后，也注意都不要缓存
       return v;
@@ -249,6 +265,8 @@ var deeping = function(deep) {
     // if (math.littleThan(bestScore, T.THREE * 2)) bestScore = MIN; // 如果能找到双三以上的棋，则保留bestScore做剪枝，否则直接设置为最小值
   }
 
+  // 去除被剪枝的点
+  candidates = candidates.filter((d) => !d.v.abcut)
   // 美化一下
   candidates = candidates.map(function (d) {
     var r = [d[0], d[1]]
