@@ -8,6 +8,7 @@ module.exports = {
   random: false,// 在分数差不多的时候是不是随机选择一个走
   log: true,
   // 下面几个设置都是用来提升搜索速度的
+  abcut: true,
   spreadLimit: 1,// 单步延伸 长度限制
   star: true, // 是否开启 starspread
   // TODO: 目前开启缓存后，搜索会出现一些未知的bug

@@ -366,7 +366,10 @@ Board.prototype.gen = function(role, onlyThrees, starSpread) {
               continue;
             }
             // 必须在米子方向上
-            if ( maxScore >= S.FIVE || starTo(lastPoint1, p) || starTo(lastPoint2, p)) {
+            // 并且，要区分进攻防守的角色，lp1 是对方在进攻，lp2 是自己在进攻
+            // 比下面一行被注释的代码能提升5%左右的搜索速度（很少）
+            if ( maxScore >= S.FIVE || p.attack === R.reverse(role) && starTo(lastPoint1, p) || p.attack === role && starTo(lastPoint2, p)) {
+            // if ( maxScore >= S.FIVE || starTo(lastPoint1, p) || starTo(lastPoint2, p)) {
               
             } else {
               count ++;
